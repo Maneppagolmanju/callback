@@ -1,13 +1,48 @@
-<!doctype html><meta charset="utf-8">
+<!doctype html>
+<meta charset="utf-8">
+<title>OAuth Callback Debug</title>
 <h1>OAuth Callback Debug</h1>
-<pre id="out"></pre>
+
+<div id="output"></div>
+
 <script>
-  const out = document.getElementById('out');
   const q = new URLSearchParams(location.search);
   const h = new URLSearchParams(location.hash.slice(1));
-  const all = {};
-  q.forEach((v,k)=>all[`query.${k}`]=v);
-  h.forEach((v,k)=>all[`hash.${k}`]=v);
-  all["window.name"] = window.name || "";
-  out.textContent = JSON.stringify(all, null, 2);
+  const data = {};
+
+  q.forEach((v,k)=>data[`query.${k}`]=v);
+  h.forEach((v,k)=>data[`hash.${k}`]=v);
+  data["window.name"] = window.name || "";
+
+  const accessToken = data["hash.access_token"] || "";
+
+  function codeBlock(cmd) {
+    return `<pre><code>${cmd}</code></pre>`;
+  }
+
+  let html = "";
+
+  if (accessToken) {
+    html += `<h2>Access Token</h2><textarea rows="3" cols="80" readonly>${accessToken}</textarea>`;
+
+    // Prebuilt curl commands
+    html += `<h2>Ready-to-use curl commands</h2>`;
+    html += codeBlock(`curl -H "Authorization: Bearer ${accessToken}" \\
+  https://www.googleapis.com/oauth2/v1/tokeninfo`);
+
+    html += codeBlock(`curl -H "Authorization: Bearer ${accessToken}" \\
+  https://www.googleapis.com/gmail/v1/users/me/profile`);
+
+    html += codeBlock(`curl -s -H "Authorization: Bearer ${accessToken}" \\
+  "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=5" \\
+  | jq -r '.messages[].id' \\
+  | xargs -I {} curl -s -H "Authorization: Bearer ${accessToken}" \\
+      "https://gmail.googleapis.com/gmail/v1/users/me/messages/{}?format=metadata&metadataHeaders=Subject" \\
+  | jq -r '.payload.headers[] | select(.name=="Subject") | .value'`);
+  }
+
+  // Always show all captured params for completeness
+  html += `<h2>All Captured Parameters</h2><pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+  document.getElementById("output").innerHTML = html;
 </script>
