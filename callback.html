@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8">
+<h1>OAuth Callback Debug</h1>
+<pre id="out"></pre>
+<script>
+  const out = document.getElementById('out');
+  const q = new URLSearchParams(location.search);
+  const h = new URLSearchParams(location.hash.slice(1));
+  const all = {};
+  q.forEach((v,k)=>all[`query.${k}`]=v);
+  h.forEach((v,k)=>all[`hash.${k}`]=v);
+  all["window.name"] = window.name || "";
+  out.textContent = JSON.stringify(all, null, 2);
+</script>
